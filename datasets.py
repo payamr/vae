@@ -1,5 +1,6 @@
 from typing import *
 
+import hub
 import numpy as np
 import tensorflow as tf
 
@@ -31,6 +32,46 @@ def create_mnist_datasets(
     return train_dataset, test_dataset
 
 
-def create_audio_datasets() -> Tuple[tf.data.Dataset, tf.data.Dataset]:
-    raise NotImplementedError()
+def spoken_digit_spectrograms(train: bool, test_ratio: float = 0.1) -> Callable:
+    """
+    generator which yields normalized spectrograms (type=np.uint8)
+    """
+    assert 0 < test_ratio < 1
+    ds = hub.load("hub://activeloop/spoken_mnist")
+    test_period = int(1. / test_ratio)
 
+    def skip_condition(counter) -> bool:
+        return counter % test_period == 0 if train else counter % test_period != 0
+
+    def _gen():
+        for i, sample in enumerate(ds):
+            if skip_condition(i):
+                continue
+            spec = sample['spectrograms'].numpy().astype(np.float32) / 255.
+            yield spec
+
+    return _gen
+
+
+def create_spoken_digit_spectrogram_dataset(
+        generator,
+        batch_size: int,
+        buffer_size: int = 10,
+) -> tf.data.Dataset:
+    dataset = tf.data.Dataset.from_generator(
+        generator,
+        output_types=tf.float32,
+        output_shapes=(64, 64, 4)
+    )
+    return dataset.padded_batch(batch_size).shuffle(buffer_size).repeat().prefetch(tf.data.AUTOTUNE)
+
+
+if __name__ == '__main__':
+    test_data = create_spoken_digit_spectrogram_dataset(
+        generator=spoken_digit_spectrograms(train=False),
+        batch_size=3,
+        buffer_size=2
+    )
+    for d in test_data.take(1):
+        print('here')
+        print(d)
