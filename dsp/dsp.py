@@ -208,17 +208,17 @@ def db_to_magnitude(magnitude_db_frames, silence_db):
     return magnitude_frames
 
 def stft_analysis(windowed_frames, config):
-    spectral_frames = np.fft.rfft(windowed_frames, axis=1)
+    spectral_frames = np.fft.rfft(windowed_frames, axis=1, norm='ortho')
     magnitude_frames = np.abs(spectral_frames)
     phase_frames = np.angle(spectral_frames)
     
     feature_names = config['features']
     feature_frames = {}
     
-    if 'magnitude' in feature_names:
-        feature_frames['magnitude'] = magnitude_frames
-    if 'magnitude_diff' in feature_names:
-        feature_frames['magnitude_diff'] = get_feature_diffs(magnitude_frames)
+    if 'magnitude_norm' in feature_names:
+        feature_frames['magnitude_norm'] = magnitude_frames
+    if 'magnitude_norm_diff' in feature_names:
+        feature_frames['magnitude_norm_diff'] = get_feature_diffs(magnitude_frames)
     if 'phase_norm' in feature_names:
         feature_frames['phase_norm'] = get_normalized_phase(phase_frames)
     if 'phase_norm_diff' in feature_names:
@@ -232,10 +232,10 @@ def stft_synthesis(feature_frames, config):
     magnitude_frames = None
     phase_frames = None
     
-    if 'magnitude' in feature_names:
-        magnitude_frames = feature_frames['magnitude']
-    elif 'magnitude_diff' in feature_names:
-        magnitude_frames = get_feature_cumsum(feature_frames['magnitude_diff'])
+    if 'magnitude_norm' in feature_names:
+        magnitude_frames = feature_frames['magnitude_norm']
+    elif 'magnitude_norm_diff' in feature_names:
+        magnitude_frames = get_feature_cumsum(feature_frames['magnitude_norm_diff'])
     else:
         raise ValueError('No magnitude data for synthesis!')
     if 'phase_norm' in feature_names:
@@ -244,9 +244,7 @@ def stft_synthesis(feature_frames, config):
         phase_frames = get_denormalized_phase(get_feature_cumsum(feature_frames['phase_norm_diff']))
     else:
         raise ValueError('No phase data for synthesis!')
-        
     spectral_frames = magnitude_frames * np.exp(phase_frames * 1j)
-    windowed_frames = np.fft.irfft(spectral_frames, axis=1)
+    windowed_frames = np.fft.irfft(spectral_frames, axis=1, norm='ortho')
     
     return windowed_frames
-    

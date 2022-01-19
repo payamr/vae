@@ -116,7 +116,7 @@ class TestStftFeatures(unittest.TestCase):
         self.expected_num_bins = windowed_frame_data['frame_size'] // 2 + 1
         sample_rate = 8000
         self.configs = []
-        for features in [('magnitude', 'phase_norm'), ('magnitude_diff', 'phase_norm_diff')]:
+        for features in [('magnitude_norm', 'phase_norm'), ('magnitude_norm_diff', 'phase_norm_diff')]:
             self.configs.append({
                 'sample_rate': sample_rate,
                 'hop_size': hop_size,

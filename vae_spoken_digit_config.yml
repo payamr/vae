@@ -11,5 +11,5 @@ dsp:
     sample_rate: 8000
     hop_size: null
     features: 
-      - magnitude
+      - magnitude_norm
       - phase_norm
