@@ -92,6 +92,8 @@ def convert_raw_spoken_digit_dataset(destination_dir, percent_load=100, download
         np.save(destination_path, example_array)
         example_id += 1
 
+def _get_spoken_digit_feature_channels(feature_name):
+    return 2 if feature_name == 'spectrum_norm' else 1
 
 def _get_spoken_digit_signature_and_padded_shape(config, load_labels):
     windowed_frame_config = config['dsp']['windowed_frames']
@@ -104,8 +106,9 @@ def _get_spoken_digit_signature_and_padded_shape(config, load_labels):
     signature = {}
     padded_shapes = {}
     for feature_name in feature_names:
-        signature[feature_name] = tf.TensorSpec(shape=(None, num_bins), dtype=tf.float32)
-        padded_shapes[feature_name] = (None, num_bins)
+        num_channels = _get_spoken_digit_feature_channels(feature_name)
+        signature[feature_name] = tf.TensorSpec(shape=(None, num_bins, num_channels), dtype=tf.float32)
+        padded_shapes[feature_name] = (None, num_bins, num_channels)
         
     signature = [signature]
         
@@ -128,8 +131,10 @@ def _extract_spoken_digit_features_npy(example, config, load_labels):
     features = dsp.stft_analysis(windowed_frame_data['frames'], stft_features_config)
     
     # convert numpy arrays to tensors
-    for feature in features:
-        features[feature] = tf.convert_to_tensor(features[feature], dtype=tf.float32)
+    for feature_name in features:
+        num_channels = _get_spoken_digit_feature_channels(feature_name)
+        feature_frames = features[feature_name].view(f'({num_channels},)float')
+        features[feature_name] = tf.convert_to_tensor(feature_frames, dtype=tf.float32)
     
     if label is not None:
         label = tf.convert_to_tensor(label, dtype=tf.int8)
