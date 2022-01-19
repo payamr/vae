@@ -1,2 +1,5 @@
 __pycache__
 .idea
+.DS_Store
+.vscode/launch.json
+spoken_word_data/*
