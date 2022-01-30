@@ -158,7 +158,9 @@ def windowed_frame_synthesis(windowed_frame_data, config):
     if padding_size > 0:
         windowed_frames = windowed_frames[:, :-padding_size]
         
-    if sqrt_window and np.all(window > 0):
+    if sqrt_window:
+        if not np.all(window >= 0):
+            raise Exception(f"Windows with negative values are not compatible with 'sqrt_window' option.")
         window = np.sqrt(window)
         windowed_frames[:, : window_size] *= window
 
