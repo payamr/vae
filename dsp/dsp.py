@@ -178,24 +178,18 @@ def get_fft_bin_phase_frequencies(num_bins, hop_size, sample_rate):
 
 def get_feature_diffs(feature_frames):
     feature_diff_frames = np.vstack((feature_frames[0], np.diff(feature_frames, axis=0)))
-    assert(np.allclose(feature_frames.shape, feature_diff_frames.shape))
     return feature_diff_frames
 
 def get_feature_cumsum(feature_diff_frames):
     feature_frames = np.cumsum(feature_diff_frames, axis=0)
-    assert(np.allclose(feature_frames.shape, feature_diff_frames.shape))
     return feature_frames
 
 def get_normalized_phase(phase_frames):
     phase_norm_frames = phase_frames / np.pi
-    assert(np.all(phase_norm_frames >= -1.0))
-    assert(np.all(phase_norm_frames <= 1.0))
     return phase_norm_frames
 
 def get_denormalized_phase(phase_norm_frames):
     phase_frames = phase_norm_frames * np.pi
-    assert(np.all(phase_frames >= -np.pi))
-    assert(np.all(phase_frames <= np.pi))
     return phase_frames
 
 def magnitude_to_db(magnitude_frames, silence_db):
