@@ -103,7 +103,9 @@ def windowed_frame_analysis(signal, config):
     
     num_hops = (M - window_size) // H + 1
     
-    if sqrt_window and np.all(window > 0):
+    if sqrt_window: 
+        if not np.all(window >= 0):
+            raise Exception(f"Windows with negative values are not compatible with 'sqrt_window' option.")
         window = np.sqrt(window)
 
     frame_indexer = np.arange(window_size).reshape(1, -1) + hop_size * np.arange(num_hops).reshape(-1, 1)
