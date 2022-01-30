@@ -69,7 +69,7 @@ def _load_spoken_digit_dataset_tf(percent_load, load_labels, download=False):
     all_data = all_data[0]
     all_data = all_data.map(lambda x: _preprocess_spoken_digit_audio_tf(x, load_labels), 
                             num_parallel_calls=tf.data.AUTOTUNE,
-                            deterministic=False)
+                            deterministic=True)
     return all_data
 
 
