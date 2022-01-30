@@ -120,6 +120,9 @@ def _get_spoken_digit_signature_and_padded_shape(config, load_labels):
 
 
 def _extract_spoken_digit_features_npy(example, config, load_labels):
+    '''
+    Computes requested features from raw audio data. Time corresponds to axis=0.
+    '''
     audio = example.audio # this should be a numpy array
     label = example.label if load_labels else None
     # TODO data augmentation
@@ -168,22 +171,19 @@ def create_spoken_digit_datasets(
         batch_size=32,
         train_test_split=0.8,
         load_labels=False,
-        repeat=False,
+        repeat=True,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset]:    
     all_data, padded_shapes = load_spoken_digit_dataset(data_dir, config, load_labels)
     total_count = len(all_data)
 
     train_count = int(train_test_split * total_count)
-    test_count = total_count - train_count
     
-    train_data = all_data.take(train_count).cache().shuffle(train_count, reshuffle_each_iteration=True)\
-    
-    if repeat == False:
-        assert(len(train_data) == train_count)
-    else:
-        train_data = train_data.repeat(count=repeat)
+    train_data = all_data.take(train_count).cache().shuffle(train_count, reshuffle_each_iteration=True)
     test_data = all_data.skip(train_count).cache()
-    assert(len(test_data) == test_count)
+
+    if repeat == True:
+        train_data = train_data.repeat()
+        test_data = test_data.repeat()
 
     train_data = train_data.padded_batch(batch_size, padded_shapes=padded_shapes)
     test_data = test_data.padded_batch(batch_size, padded_shapes=padded_shapes)
