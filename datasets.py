@@ -44,14 +44,15 @@ Spoken digit audio dataset
 
 def _preprocess_spoken_digit_audio_tf(example, with_labels):
     audio = example['audio']
-    # convert from int16? to float32 [-1.0, 1.0]
-    if audio.dtype.is_integer:
-        # detected clipping using just tf.int16.max to normalize...
-        audio = tf.cast(audio, tf.float32) / (tf.int16.max + 1.0)
+    audio = tf.cast(audio, tf.float32)
         
     # remove DC offset
     audio_mean = tf.math.reduce_mean(audio, axis=0) 
     audio -= audio_mean
+    
+    # convert from int16 to float32 [-1.0, 1.0]
+    # detected clipping using just 'tf.int16.max' to normalize, hence the '+ 1.0'...
+    audio /= (tf.int16.max + 1.0) 
     
     if with_labels:
         return (audio, example['label'])
