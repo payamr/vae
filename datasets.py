@@ -87,15 +87,13 @@ def convert_raw_spoken_digit_dataset(destination_dir, percent_load=100, download
     # but not biased by original order of raw dataset
     all_data = all_data.shuffle(total_count, seed=0)
 
-    example_id = 0
-    for example_audio, example_label in all_data:
+    for example_id, (example_audio, example_label) in enumerate(all_data):
         destination_path = destination_dir / f'example_{example_id}.npy'
         audio = example_audio.numpy()
         label = int(example_label)
         example_type = np.dtype([('label', np.int8), ('audio', np.float32, (len(audio),))])
         example_array = np.rec.array((label, audio), dtype=example_type)
         np.save(destination_path, example_array)
-        example_id += 1
 
 def _get_spoken_digit_feature_channels(feature_name):
     return 2 if feature_name == 'spectrum_norm' else 1
