@@ -83,6 +83,10 @@ def convert_raw_spoken_digit_dataset(destination_dir, percent_load=100, download
     total_count = len(all_data)
     print(f'Writing {total_count} examples as numpy arrays')
     
+    # deterministic shuffling now so later train / test split is consistent 
+    # but not biased by original order of raw dataset
+    all_data = all_data.shuffle(total_count, seed=0)
+
     example_id = 0
     for example_audio, example_label in all_data:
         destination_path = destination_dir / f'example_{example_id}.npy'
