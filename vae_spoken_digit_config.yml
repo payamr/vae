@@ -7,5 +7,6 @@ dsp:
     return_padded_signal: false
     sample_rate: 8000
     feature_names:
+      - spectrum_norm
       - magnitude_norm
       - phase_norm
