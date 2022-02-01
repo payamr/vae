@@ -10,19 +10,16 @@ window_types = [
 ]
 window_sizes = [64, 128, 256, 512, 1024, 2048, 4096]
 
-def compute_cola_window(config):
+def get_cola_window(window_type, window_size):
     """
-    Using 'window_type' and 'window_size' values from 'config', computes 
-    desired window and corresponding hop size to achieve constant-overlap-add 
-    (COLA) property. Note that with some window - window size combinations the
-    quality of the COLA reconstruction is not perfect.
+    Using 'window_type' and 'window_size', computes desired window and 
+    corresponding hop size to achieve constant-overlap-add (COLA) property. 
+    Note that with some window - window size combinations the COLA 
+    reconstruction is not perfect.
     """
-    window_type = config['window_type']
-    window_size = config['window_size']
     assert(window_size >= 64 and (window_size & (window_size - 1)) == 0)
     if window_type == 'boxcar':
-        window = np.ones(window_size)
-        return window, window_size
+        return np.ones(window_size), window_size
     window_size = window_size - 1
     if window_type == 'bartlett':
         window = sig.windows.bartlett(window_size)
@@ -72,26 +69,16 @@ def compute_cola_window(config):
     hop_size = best_hop_size
     gain_factor = best_gain_factor
     window = np.append(window * gain_factor, np.zeros(1))
-
     return window, hop_size
 
-def get_windowed_frame_size(config):
-    window_size = config['window_size']
-    padding_factor = config['padding_factor']
-    frame_size = window_size * pow(2, padding_factor)
-    return frame_size
+def get_windowed_frame_size(window_size, padding_factor=0):
+    return window_size * pow(2, padding_factor)
 
-def windowed_frame_analysis(signal, config):
-    window = config['window']
-    window_size = config['window_size']
-    assert(len(window) == window_size)
-    hop_size = config['hop_size']
+def windowed_frame_analysis(signal, window, hop_size, 
+    padding_factor=0, zero_phase=True, sqrt_window=False, return_padded_signal=False):
+    window_size = len(window)
     assert(hop_size <= window_size)
-    padding_factor = config['padding_factor']
     assert(int(padding_factor) == padding_factor)
-    
-    zero_phase = config['zero_phase']
-    sqrt_window = config['sqrt_window']
 
     N = len(signal)
     H = hop_size
@@ -112,7 +99,7 @@ def windowed_frame_analysis(signal, config):
     
     windowed_frames = np.copy(signal[frame_indexer]) * window
 
-    frame_size = get_windowed_frame_size(config)
+    frame_size = get_windowed_frame_size(window_size, padding_factor)
     padding_size = frame_size - window_size
     if padding_size > 0:
         windowed_frames = np.append(windowed_frames, np.zeros((num_hops, padding_size)), axis=1)
@@ -127,24 +114,18 @@ def windowed_frame_analysis(signal, config):
         'frames': windowed_frames
     }
         
-    if config['return_padded_signal']:
+    if return_padded_signal:
         windowed_frame_data['padded_signal'] = signal
     return windowed_frame_data
 
-def windowed_frame_synthesis(windowed_frame_data, config):
+def windowed_frame_synthesis(windowed_frame_data, window, hop_size, padding_factor,
+    zero_phase=True, sqrt_window=False):
     windowed_frames = windowed_frame_data['frames']
     M = windowed_frame_data['padded_duration_samp']
     
-    window = config['window']
-    window_size = config['window_size']
-    assert(len(window) == window_size)
-    hop_size = config['hop_size']
+    window_size = len(window)
     assert(hop_size <= window_size)
-    padding_factor = config['padding_factor']
     assert(int(padding_factor) == padding_factor)
-    
-    zero_phase = config['zero_phase']
-    sqrt_window = config['sqrt_window']
     
     signal = np.zeros(M)
     
@@ -152,7 +133,7 @@ def windowed_frame_synthesis(windowed_frame_data, config):
         zero_phase_shift = 1 - window_size // 2
         windowed_frames = np.roll(windowed_frames, -zero_phase_shift, axis=1)
     
-    frame_size = get_windowed_frame_size(config)
+    frame_size = get_windowed_frame_size(window_size, padding_factor)
     assert(frame_size == windowed_frame_data['frame_size'])
     padding_size = frame_size - window_size
     if padding_size > 0:
@@ -205,12 +186,16 @@ def db_to_magnitude(magnitude_db_frames, silence_db):
     magnitude_frames[valid_indices] = pow(10.0, magnitude_db_frames[valid_indices] / 20.0)
     return magnitude_frames
 
-def stft_analysis(windowed_frames, config):
+def get_stft_feature_shape(feature_name, window_size, padding_factor=0):
+    frame_size = get_windowed_frame_size(window_size, padding_factor)
+    num_bins = frame_size // 2 + 1
+    return (None, num_bins, 2) if feature_name == 'spectrum_norm' else (None, num_bins, 1)
+        
+def stft_analysis(windowed_frames, feature_names):
     spectral_frames = np.fft.rfft(windowed_frames, axis=1, norm='ortho')
     magnitude_frames = np.abs(spectral_frames)
     phase_frames = np.angle(spectral_frames)
     
-    feature_names = config['features']
     feature_frames = {}
     
     if 'spectrum_norm' in feature_names:
@@ -225,8 +210,8 @@ def stft_analysis(windowed_frames, config):
         feature_frames['phase_norm_diff'] = get_feature_diffs(get_normalized_phase(phase_frames))
     return feature_frames
 
-def stft_synthesis(feature_frames, config):
-    feature_names = config['features']
+def stft_synthesis(feature_frames):    
+    feature_names = feature_frames.keys()
     
     spectral_frames = None
     magnitude_frames = None

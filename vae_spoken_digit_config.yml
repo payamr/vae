@@ -1,15 +1,11 @@
 dsp:
-  windowed_frames:
     window_type: hann
     window_size: 256
     padding_factor: 0
     zero_phase: true
     sqrt_window: false
     return_padded_signal: false
-
-  stft_features:
     sample_rate: 8000
-    hop_size: null
-    features: 
+    feature_names:
       - magnitude_norm
       - phase_norm
