@@ -1,0 +1,12 @@
+dsp:
+    window_type: hann
+    window_size: 256
+    padding_factor: 0
+    zero_phase: true
+    sqrt_window: false
+    return_padded_signal: false
+    sample_rate: 8000
+    feature_names:
+      - spectrum_norm
+      - magnitude_norm
+      - phase_norm
